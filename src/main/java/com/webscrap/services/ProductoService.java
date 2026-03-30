@@ -40,33 +40,34 @@ public class ProductoService {
 
 
     public List<Producto> ejecutarScrapingYGuardar(String texto) {
-
-        ChromeOptions options = new ChromeOptions();
-        options.addArguments("--remote-allow-origins=*");
-        options.addArguments("--disable-dev-shm-usage");
-        options.addArguments("--no-sandbox");
-        options.addArguments("--start-maximized");
-
-        WebDriver driver = new ChromeDriver(options);
-
         List<Producto> listaFinal = new ArrayList<>();
-
+        // ALCAMPO
+        WebDriver driverAlcampo = new ChromeDriver(getOptions());
         try {
-            String query = texto;
-
-            listaFinal.addAll(scrappingService.buscarAlcampo(driver, query));
-            System.out.println("1  => " + listaFinal);
-
-            listaFinal.addAll(scrappingService.buscarDia(driver, query));
-            System.out.println("2  => " +listaFinal);
-
+            listaFinal.addAll(scrappingService.buscarAlcampo(driverAlcampo, texto));
         } finally {
-            driver.quit();
+            driverAlcampo.quit();
+        }
+
+        // DIA
+        WebDriver driverDia = new ChromeDriver(getOptions());
+        try {
+            listaFinal.addAll(scrappingService.buscarDia(driverDia, texto));
+        } finally {
+            driverDia.quit();
+        }
+
+        // AHORRAMAS
+        WebDriver driverAhorramas = new ChromeDriver(getOptions());
+        try {
+            listaFinal.addAll(scrappingService.buscarAhorramas(driverAhorramas, texto));
+        } finally {
+            driverDia.quit();
         }
 
         return productoRepository.saveAll(listaFinal);
     }
-    // ✅ ESTE ES EL QUE TE FALTA
+    // Trae todos los productos
     public List<ProductoDTO> getAll() {
         return productoRepository.findAll().stream().map(p -> {
 
@@ -84,6 +85,15 @@ public class ProductoService {
             );
 
         }).toList();
+    }
+    //Configuración Selenium
+    private ChromeOptions getOptions() {
+        ChromeOptions options = new ChromeOptions();
+        options.addArguments("--remote-allow-origins=*");
+        options.addArguments("--disable-dev-shm-usage");
+        options.addArguments("--no-sandbox");
+        options.addArguments("--start-maximized");
+        return options;
     }
 
 }

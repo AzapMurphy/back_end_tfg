@@ -22,7 +22,5 @@ public class Usuario {
 
     private String pass;
 
-    // Relación con carrito (1 usuario -> muchos registros carrito)
-    @OneToMany(mappedBy = "usuario")
-    private List<Carrito> carritos;
+
 }

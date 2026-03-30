@@ -23,6 +23,7 @@ public class Producto {
 
     private Double precio;
 
+    @Column(columnDefinition = "TEXT")
     private String imagen;
 
     // Relación con supermercado (muchos productos → 1 supermercado)
@@ -30,15 +31,6 @@ public class Producto {
     @JoinColumn(name = "id_supermercado")
     private Supermercado supermercado;
 
-    // Relación con carrito
-    @OneToMany(mappedBy = "producto")
-    private List<Carrito> carritos;
 
-    public Producto(Long id, String nombre, Double precio, String imagen, Supermercado supermercado) {
-        this.id = id;
-        this.nombre = nombre;
-        this.precio = precio;
-        this.imagen = imagen;
-        this.supermercado = supermercado;
-    }
+
 }
