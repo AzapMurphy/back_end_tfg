@@ -26,11 +26,19 @@ public class Producto {
     @Column(columnDefinition = "TEXT")
     private String imagen;
 
+    @Column(name = "session_id")
+    private String sessionId;
+
     // Relación con supermercado (muchos productos → 1 supermercado)
     @ManyToOne
     @JoinColumn(name = "id_supermercado")
     private Supermercado supermercado;
 
-
-
+    public Producto(Long id, String nombre, Double precio, String imagen, Supermercado supermercado) {
+        this.id = id;
+        this.nombre = nombre;
+        this.precio = precio;
+        this.imagen = imagen;
+        this.supermercado = supermercado;
+    }
 }

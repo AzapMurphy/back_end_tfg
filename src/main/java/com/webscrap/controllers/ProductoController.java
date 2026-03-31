@@ -4,6 +4,7 @@ package com.webscrap.controllers;
 import com.webscrap.dto.ProductoDTO;
 import com.webscrap.dto.ScrapeRequest;
 import com.webscrap.models.Producto;
+import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,19 +19,20 @@ import java.util.Map;
 @RestController
 @RequestMapping("api/productos")
 // TODO configurar las CORS
-@CrossOrigin(origins = "*", maxAge = 3600)
+@CrossOrigin(origins = "http://localhost:4200", allowCredentials = "true")
 
 public class ProductoController {
     @Autowired
     private ProductoService productoService;
 
-    // 🔹 Obtener todos los productos
+    // 🔹 Obtener todos los productos, Obtener productos SOLO de esta sesion
     @GetMapping("/getAllProductos")
-    public ResponseEntity<?> getAllProductos() {
+    public ResponseEntity<?> getAllProductos(HttpSession session) {
 
         Map<String, Object> response = new HashMap<>();
         try {
-            List<ProductoDTO> lista = productoService.getAll();
+            String sessionId = session.getId();
+            List<ProductoDTO> lista = productoService.getBySessionId(sessionId);
             response.put("code", 1);
             response.put("message", "obtenida la lista de productos");
             response.put("total", lista.size());
@@ -45,27 +47,44 @@ public class ProductoController {
 
     // 🔥 NUEVO ENDPOINT: hace TODO (scraping + guardado)
     @PostMapping("/scrape")
-    public ResponseEntity<?> scrapeYGuardar(@RequestBody ScrapeRequest request) {
+    public ResponseEntity<?> scrapeYGuardar(@RequestBody ScrapeRequest request, HttpSession session) {
 
         Map<String, Object> response = new HashMap<>();
 
         try {
+            String sessionId = session.getId();
             String texto = request.getTexto();
 
-            productoService.guardarTexto(texto);
-
-            List<Producto> productos = productoService.ejecutarScrapingYGuardar(texto);
+            List<Producto> productos = productoService.ejecutarScrapingYGuardar(texto, sessionId);
 
             response.put("code", 1);
             response.put("message", "scraping realizado y guardado correctamente");
             response.put("total", productos.size());
             response.put("data", productos);
-
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {
             response.put("code", 2);
             response.put("message", "error en scraping: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        }
+    }
+
+    // Logout - borra SOLO los datos de esta sesion
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout(HttpSession session) {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            String sessionId = session.getId();
+            productoService.deleteBySessionId(sessionId);
+            session.invalidate();
+
+            response.put("code", 1);
+            response.put("message", "sesion cerrada y datos eliminados");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            response.put("code", 2);
+            response.put("message", "error al cerrar sesion");
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
     }

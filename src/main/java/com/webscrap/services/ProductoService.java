@@ -39,7 +39,7 @@ public class ProductoService {
     }
 
 
-    public List<Producto> ejecutarScrapingYGuardar(String texto) {
+    public List<Producto> ejecutarScrapingYGuardar(String texto, String sessionId) {
         List<Producto> listaFinal = new ArrayList<>();
         // ALCAMPO
         WebDriver driverAlcampo = new ChromeDriver(getOptions());
@@ -65,26 +65,35 @@ public class ProductoService {
             driverDia.quit();
         }
 
+        // Asignar sessionId a cada producto antes de guardar
+        for (Producto p : listaFinal) {
+            p.setSessionId(sessionId);
+        }
+
         return productoRepository.saveAll(listaFinal);
     }
-    // Trae todos los productos
-    public List<ProductoDTO> getAll() {
-        return productoRepository.findAll().stream().map(p -> {
+    // Obtener solo productos de esta sesion
+    public List<ProductoDTO> getBySessionId(String sessionId) {
+        return productoRepository.findBySessionId(sessionId).stream()
+                .map(p -> {
+                    SupermercadoDTO supermercadoDTO = new SupermercadoDTO(
+                            p.getSupermercado().getId(),
+                            p.getSupermercado().getNombre()
+                    );
+                    return new ProductoDTO(
+                            p.getId(),
+                            p.getNombre(),
+                            p.getPrecio(),
+                            p.getImagen(),
+                            p.getSessionId(),
+                            supermercadoDTO
+                    );
+                }).toList();
+    }
 
-            SupermercadoDTO supermercadoDTO = new SupermercadoDTO(
-                    p.getSupermercado().getId(),
-                    p.getSupermercado().getNombre()
-            );
-
-            return new ProductoDTO(
-                    p.getId(),
-                    p.getNombre(),
-                    p.getPrecio(),
-                    p.getImagen(),
-                    supermercadoDTO
-            );
-
-        }).toList();
+    // Borrar solo productos de esta sesion
+    public void deleteBySessionId(String sessionId) {
+        productoRepository.deleteBySessionId(sessionId);
     }
     //Configuración Selenium
     private ChromeOptions getOptions() {
