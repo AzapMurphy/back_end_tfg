@@ -26,8 +26,8 @@ public class Producto {
     @Column(columnDefinition = "TEXT")
     private String imagen;
 
-    @Column(name = "session_id")
-    private String sessionId;
+    @Column(name = "firebase_uid")
+    private String firebaseUid;
 
     // Relación con supermercado (muchos productos → 1 supermercado)
     @ManyToOne

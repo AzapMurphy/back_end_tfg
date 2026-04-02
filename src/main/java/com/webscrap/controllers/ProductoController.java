@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import com.webscrap.services.ProductoService;
 
@@ -25,14 +26,17 @@ public class ProductoController {
     @Autowired
     private ProductoService productoService;
 
-    // 🔹 Obtener todos los productos, Obtener productos SOLO de esta sesion
+    // Obtener todos los productos, Obtener productos SOLO de esta token
     @GetMapping("/getAllProductos")
     public ResponseEntity<?> getAllProductos(HttpSession session) {
 
         Map<String, Object> response = new HashMap<>();
         try {
-            String sessionId = session.getId();
-            List<ProductoDTO> lista = productoService.getBySessionId(sessionId);
+            String firebaseUid = SecurityContextHolder.getContext()
+                    .getAuthentication()
+                    .getPrincipal()
+                    .toString();
+            List<ProductoDTO> lista = productoService.getByFirebaseUid(firebaseUid);
             response.put("code", 1);
             response.put("message", "obtenida la lista de productos");
             response.put("total", lista.size());
@@ -52,10 +56,16 @@ public class ProductoController {
         Map<String, Object> response = new HashMap<>();
 
         try {
-            String sessionId = session.getId();
-            String texto = request.getTexto();
+            String firebaseUid = SecurityContextHolder.getContext()
+                    .getAuthentication()
+                    .getPrincipal()
+                    .toString();
 
-            List<Producto> productos = productoService.ejecutarScrapingYGuardar(texto, sessionId);
+            List<Producto> productos = productoService.ejecutarScrapingYGuardar(
+                    request.getTexto(),
+                    firebaseUid  // CAMBIO
+            );
+
 
             response.put("code", 1);
             response.put("message", "scraping realizado y guardado correctamente");
@@ -75,8 +85,11 @@ public class ProductoController {
     public ResponseEntity<?> logout(HttpSession session) {
         Map<String, Object> response = new HashMap<>();
         try {
-            String sessionId = session.getId();
-            productoService.deleteBySessionId(sessionId);
+            String firebaseUid = SecurityContextHolder.getContext()
+                    .getAuthentication()
+                    .getPrincipal()
+                    .toString();
+            productoService.deleteByFirebaseUid(firebaseUid);;
             session.invalidate();
 
             response.put("code", 1);

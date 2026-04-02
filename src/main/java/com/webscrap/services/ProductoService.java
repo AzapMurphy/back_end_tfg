@@ -39,7 +39,7 @@ public class ProductoService {
     }
 
 
-    public List<Producto> ejecutarScrapingYGuardar(String texto, String sessionId) {
+    public List<Producto> ejecutarScrapingYGuardar(String texto, String firebaseUid) {
         List<Producto> listaFinal = new ArrayList<>();
         // ALCAMPO
         WebDriver driverAlcampo = new ChromeDriver(getOptions());
@@ -62,19 +62,19 @@ public class ProductoService {
         try {
             listaFinal.addAll(scrappingService.buscarAhorramas(driverAhorramas, texto));
         } finally {
-            driverDia.quit();
+            driverAhorramas.quit();
         }
 
-        // Asignar sessionId a cada producto antes de guardar
+        // Asignar token a cada producto antes de guardar
         for (Producto p : listaFinal) {
-            p.setSessionId(sessionId);
+            p.setFirebaseUid(firebaseUid);
         }
 
         return productoRepository.saveAll(listaFinal);
     }
-    // Obtener solo productos de esta sesion
-    public List<ProductoDTO> getBySessionId(String sessionId) {
-        return productoRepository.findBySessionId(sessionId).stream()
+    // Obtener solo productos de este token
+    public List<ProductoDTO> getByFirebaseUid(String firebaseUid) {
+        return productoRepository.findByFirebaseUid(firebaseUid).stream()
                 .map(p -> {
                     SupermercadoDTO supermercadoDTO = new SupermercadoDTO(
                             p.getSupermercado().getId(),
@@ -85,16 +85,13 @@ public class ProductoService {
                             p.getNombre(),
                             p.getPrecio(),
                             p.getImagen(),
-                            p.getSessionId(),
+                            p.getFirebaseUid(),
                             supermercadoDTO
                     );
                 }).toList();
     }
 
-    // Borrar solo productos de esta sesion
-    public void deleteBySessionId(String sessionId) {
-        productoRepository.deleteBySessionId(sessionId);
-    }
+
     //Configuración Selenium
     private ChromeOptions getOptions() {
         ChromeOptions options = new ChromeOptions();
@@ -103,6 +100,11 @@ public class ProductoService {
         options.addArguments("--no-sandbox");
         options.addArguments("--start-maximized");
         return options;
+    }
+
+
+    public void deleteByFirebaseUid(String firebaseUid) {
+        productoRepository.deleteByFirebaseUid(firebaseUid);
     }
 
 }
