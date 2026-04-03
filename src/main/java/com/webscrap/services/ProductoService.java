@@ -4,7 +4,6 @@ package com.webscrap.services;
 import com.webscrap.dto.ProductoDTO;
 import com.webscrap.dto.SupermercadoDTO;
 import com.webscrap.models.Producto;
-import com.webscrap.models.Supermercado;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;

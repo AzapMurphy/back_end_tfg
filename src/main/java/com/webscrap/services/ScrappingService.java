@@ -17,68 +17,81 @@ import java.util.List;
 public class ScrappingService {
 
     public List<Producto> buscarAlcampo(WebDriver driver, String query) {
+
         List<Producto> resultados = new ArrayList<>();
-        // LIMPIAR estado del navegador
+
         driver.manage().deleteAllCookies();
         driver.get("https://www.compraonline.alcampo.es/");
-        // Pequeña pausa (anti-bot / carga inicial)
-        try {
-            Thread.sleep(2000);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(20));
+
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
+        JavascriptExecutor js = (JavascriptExecutor) driver;
 
         try {
+
+            // Aceptar cookies
             WebElement cookiesBtn = wait.until(
                     ExpectedConditions.elementToBeClickable(By.id("onetrust-accept-btn-handler"))
             );
             cookiesBtn.click();
 
-            wait.until(ExpectedConditions.invisibilityOfElementLocated(By.className("delivery-book-modal")));
+            wait.until(ExpectedConditions.invisibilityOfElementLocated(
+                    By.className("delivery-book-modal")
+            ));
 
-            WebElement buscador = wait.until(ExpectedConditions.elementToBeClickable(By.id("search")));
+            // Buscar producto
+            WebElement buscador = wait.until(
+                    ExpectedConditions.elementToBeClickable(By.id("search"))
+            );
             buscador.click();
             buscador.sendKeys(query);
             buscador.sendKeys(Keys.ENTER);
 
-            wait.until(driverA -> {
-                List<WebElement> elements = driverA.findElements(
-                        By.cssSelector("div[class*='product-card']")
-                );
+            // Esperar primer render
+            wait.until(d -> d.findElements(By.cssSelector("div[class*='product-card']")).size() > 0);
 
-                for (WebElement el : elements) {
-                    if (!el.getText().isEmpty()) {
-                        return true;
-                    }
-                }
-                return false;
-            });
+            // SCROLL HASTA CONSEGUIR AL MENOS 5 PRODUCTOS
+            List<WebElement> productosWeb = new ArrayList<>();
+            int intentos = 0;
 
-            List<WebElement> productosWeb = wait.until(
-                    ExpectedConditions.presenceOfAllElementsLocatedBy(
-                            By.cssSelector("div[class*='product-card']")
-                    )
-            );
+            while (productosWeb.size() < 5 && intentos < 10) {
 
-            for (int i = 0; i < Math.min(5, productosWeb.size()); i++) {
+                js.executeScript("window.scrollBy(0, 2500);");
+
+                Thread.sleep(2000); // pequeño delay para lazy loading
+
+                productosWeb = driver.findElements(By.cssSelector("div[class*='product-card']"));
+
+                intentos++;
+            }
+
+            // procesar SOLO los válidos
+            for (WebElement p : productosWeb) {
+
                 try {
-                    WebElement p = productosWeb.get(i);
+                    String nombre = "";
+                    String precioRaw = "";
+                    String imagen = "";
 
-                    String nombre = p.findElement(
-                            By.cssSelector("[data-test='fop-title']")
-                    ).getText();
+                    try {
+                        nombre = p.findElement(By.cssSelector("[data-test='fop-title']")).getText();
+                    } catch (Exception ignored) {}
 
-                    String precioRaw = p.findElement(
-                            By.cssSelector("[data-test='fop-price']")
-                    ).getText();
+                    try {
+                        precioRaw = p.findElement(By.cssSelector("[data-test='fop-price']")).getText();
+                    } catch (Exception ignored) {}
+
+                    try {
+                        imagen = p.findElement(By.tagName("img")).getAttribute("src");
+                    } catch (Exception ignored) {}
+
+                    // saltar productos incompletos
+                    if (nombre.isBlank() || precioRaw.isBlank()) {
+                        continue;
+                    }
 
                     double precioFinal = Double.parseDouble(
                             precioRaw.replaceAll("[^0-9,]", "").replace(",", ".")
                     );
-
-                    String imagen = p.findElement(By.tagName("img"))
-                            .getAttribute("src");
 
                     Supermercado supermercado = new Supermercado();
                     supermercado.setId(1L);
@@ -89,18 +102,19 @@ public class ScrappingService {
 
                     resultados.add(producto);
 
+                    if (resultados.size() == 5) break;
+
                 } catch (Exception e) {
-                    System.out.println("Error producto: " + e.getMessage());
+                    System.out.println("Error procesando producto: " + e.getMessage());
                 }
             }
 
         } catch (Exception e) {
-            System.out.println("Error Alcampo: " + e.getMessage());
+            System.out.println("Error general Alcampo: " + e.getMessage());
         }
 
         return resultados;
     }
-
     public List<Producto> buscarDia(WebDriver driver, String query) {
         List<Producto> resultados = new ArrayList<>();
         // LIMPIAR estado del navegador
